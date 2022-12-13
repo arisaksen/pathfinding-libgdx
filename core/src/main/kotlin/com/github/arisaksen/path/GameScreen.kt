@@ -12,10 +12,18 @@ import com.badlogic.gdx.maps.tiled.tiles.StaticTiledMapTile
 import ktx.app.KtxScreen
 import ktx.assets.disposeSafely
 import java.io.File
+import ktx.log.logger
 
 class GameScreen : KtxScreen {
     private val aoc12Map: List<List<Char>> = File("assets", "Day12.txt").readLines().map { it.toList() }
-//    private val aoc12Map: List<List<Char>> = File("assets", "Day12_test.txt").readLines().map { it.toList() }
+
+    // private val aoc12Map: List<List<Char>> = File("assets", "Day12_test.txt").readLines().map { it.toList() }
+    private lateinit var startCell: CellData
+    private lateinit var endCell: CellData
+    private val cellSearchFrontier = ArrayDeque<CellData>()
+    private val cellsToVisitEachRender: Int = 4
+    private val cellsVisited = mutableSetOf<CellData>()
+
     private val camera: OrthographicCamera = OrthographicCamera()
     private lateinit var tiledMap: TiledMap
     private lateinit var tiledMapRenderer: TiledMapRenderer
@@ -28,6 +36,7 @@ class GameScreen : KtxScreen {
 
         tiledMap = setMap(aoc12Map, worldWidth, worldHeight)
         tiledMapRenderer = OrthogonalTiledMapRenderer(tiledMap)
+        cellSearchFrontier.addFirst(startCell)
     }
 
     override fun render(delta: Float) {
@@ -37,15 +46,58 @@ class GameScreen : KtxScreen {
             render()
         }
 
-        breadthFirstSearch(aoc12Map)
+        breadthFirstSearch(cellsToVisitEachRender, cellsVisited.size)
+        drawVisitedCells(cellsVisited)
     }
 
     override fun dispose() {
         tiledMap.disposeSafely()
     }
 
-    private fun breadthFirstSearch(aoc12Map: List<List<Char>>) {
+//    private fun drawVisitedCells(cellsVisited: MutableSet<CellData>) {
+//        val texture = Texture(Pixmap(1, 1, RGBA8888))
+//        cellsVisited.forEach {
+//
+//        }
+//    }
 
+    private fun breadthFirstSearch(cellsToVisitEachRender: Int, cellsVisitedSizeAtRenderStart: Int) {
+//        val cells = ArrayDeque<CellData>()
+
+//        if (cellsToVisitEachRender == 0) cells.addFirst(startCell)
+        while (cellSearchFrontier.isNotEmpty()) {
+            val currentCell = cellSearchFrontier.removeFirst()
+            if (cellsVisited.contains(currentCell)) {
+                continue
+            } else if (currentCell == endCell) {
+                log.debug { "The End is reached $currentCell" }
+                cellSearchFrontier.clear()
+                break
+            } else if (cellsVisited.size >= cellsVisitedSizeAtRenderStart + cellsToVisitEachRender) return
+
+            listOf(0 to 1, -1 to 0, 0 to -1, 1 to 0)
+                .map { CellData(currentCell.x + it.first, currentCell.y + it.second, currentCell.pathLength + 1) }
+                .filter { it.isInMap(aoc12Map) }
+                .filter { currentCell.isValidRoute(it, aoc12Map) }
+                .map { cellSearchFrontier.add(it) }
+
+            cellsVisited.add(currentCell).also { log.debug { "Added $currentCell to visited" } }
+        }
+    }
+
+    private fun CellData.isInMap(map: List<List<Char>>): Boolean {
+        return this.y in map.indices && this.x in map[0].indices
+    }
+
+    private fun CellData.isValidRoute(nextCellData: CellData, map: List<List<Char>>): Boolean =
+        measureHeight(nextCellData, map) - measureHeight(this, map) <= 1
+
+    private fun measureHeight(cellData: CellData, map: List<List<Char>>): Int {
+        return when (val elevation = map[cellData.y][cellData.x]) {
+            'S' -> 'a'.code
+            'E' -> 'z'.code
+            else -> elevation.code
+        } - 'a'.code
     }
 
     // practising kotlin DSL. Kotlin-dsl-examples:
@@ -57,6 +109,8 @@ class GameScreen : KtxScreen {
                     aoc12Map.reversed().mapIndexed { y, row ->
                         row.mapIndexed { x, char ->
                             setCell(x, y, Cell().setTile(StaticTiledMapTile(TextureRegion(char.toTexture()))))
+                            if (char == 'S') startCell = CellData(x, y, 0)
+                            if (char == 'E') endCell = CellData(x, y, 0)
                         }
                     }
                 }
@@ -111,4 +165,7 @@ class GameScreen : KtxScreen {
         lambda: TiledMapTileLayer.() -> Unit
     ): TiledMapTileLayer = tiledMapTileLayer.apply(lambda)
 
+    companion object {
+        private val log = logger<GameScreen>()
+    }
 }
