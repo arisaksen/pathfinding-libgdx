@@ -1,6 +1,5 @@
 package com.github.arisaksen.path
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.*
 import com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888
 import com.badlogic.gdx.graphics.g2d.TextureRegion
@@ -10,53 +9,59 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer.Cell
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer
 import com.badlogic.gdx.maps.tiled.tiles.StaticTiledMapTile
-import com.badlogic.gdx.utils.viewport.FitViewport
 import ktx.app.KtxScreen
 import ktx.assets.disposeSafely
 import java.io.File
 
 class GameScreen : KtxScreen {
+    private val aoc12Map: List<List<Char>> = File("assets", "Day12.txt").readLines().map { it.toList() }
+//    private val aoc12Map: List<List<Char>> = File("assets", "Day12_test.txt").readLines().map { it.toList() }
+    private val camera: OrthographicCamera = OrthographicCamera()
     private lateinit var tiledMap: TiledMap
-    private lateinit var camera: OrthographicCamera
-    private lateinit var viewport: FitViewport
     private lateinit var tiledMapRenderer: TiledMapRenderer
 
     override fun show() {
-        val aoc12Map = File("assets", "Day12.txt").readLines().map { it.toList() }
         val worldWidth = aoc12Map[0].size
         val worldHeight = aoc12Map.size
 
-        camera = OrthographicCamera()
         camera.setToOrtho(false, worldWidth.toFloat(), worldHeight.toFloat())
+
         tiledMap = setMap(aoc12Map, worldWidth, worldHeight)
         tiledMapRenderer = OrthogonalTiledMapRenderer(tiledMap)
     }
 
     override fun render(delta: Float) {
         camera.update()
-        tiledMapRenderer.setView(camera)
-        tiledMapRenderer.render()
+        with(tiledMapRenderer) {
+            setView(camera)
+            render()
+        }
+
+        breadthFirstSearch(aoc12Map)
     }
 
     override fun dispose() {
         tiledMap.disposeSafely()
     }
 
-    private fun setMap(aoc12Map: List<List<Char>>, worldWidth: Int, worldHeight: Int): TiledMap {
-        val map = TiledMap()
-        val layers = map.layers
+    private fun breadthFirstSearch(aoc12Map: List<List<Char>>) {
 
-        val mapLayer = TiledMapTileLayer(worldWidth, worldHeight, 1, 1)
-        aoc12Map.flatMapIndexed { y, row ->
-            row.mapIndexed { x, char ->
-                val cell = Cell().setTile(StaticTiledMapTile(TextureRegion(char.toTexture())))
-                mapLayer.setCell(x, y, cell)
-            }
-        }
-        layers.add(mapLayer)
-
-        return map
     }
+
+    // practising kotlin DSL. Kotlin-dsl-examples:
+    // https://github.com/antonarhipov/kotlin-dsl-examples/blob/master/src/main/kotlin/org/arhan/dslExtensions.kt
+    private fun setMap(aoc12Map: List<List<Char>>, worldWidth: Int, worldHeight: Int): TiledMap =
+        tiledMap {
+            layers.add(
+                tiledMapTileLayer(TiledMapTileLayer(worldWidth, worldHeight, 1, 1)) {
+                    aoc12Map.reversed().mapIndexed { y, row ->
+                        row.mapIndexed { x, char ->
+                            setCell(x, y, Cell().setTile(StaticTiledMapTile(TextureRegion(char.toTexture()))))
+                        }
+                    }
+                }
+            )
+        }
 
     // https://libgdx.com/wiki/graphics/2d/pixmaps
     private fun Char.toTexture(): Texture {
@@ -86,5 +91,24 @@ class GameScreen : KtxScreen {
         pixmap.disposeSafely()
         return texture
     }
+
+    private fun TiledMapTileLayer.forEachCell(
+        startX: Int,
+        startY: Int,
+        size: Int,
+        action: (TiledMapTileLayer.Cell, Int, Int) -> Unit
+    ) {
+        for (x in startX - size..startX + size) {
+            for (y in startY - size until startY + size) {
+                this.getCell(x, y)?.let { action(it, x, y) }
+            }
+        }
+    }
+
+    private fun tiledMap(lambda: TiledMap.() -> Unit) = TiledMap().apply(lambda)
+    private fun tiledMapTileLayer(
+        tiledMapTileLayer: TiledMapTileLayer,
+        lambda: TiledMapTileLayer.() -> Unit
+    ): TiledMapTileLayer = tiledMapTileLayer.apply(lambda)
 
 }

@@ -9,8 +9,8 @@ import com.github.arisaksen.path.Path
 /** Launches the desktop (LWJGL3) application. */
 fun main() {
     Lwjgl3Application(Path(), Lwjgl3ApplicationConfiguration().apply {
-        setTitle("GladiatorSandArena")
-        setWindowedMode(1220, 480)
+        setTitle("Path")
+        setWindowedMode(1220, 360)
         setWindowIcon(*(arrayOf(128, 64, 32, 16).map { "libgdx$it.png" }.toTypedArray()))
     })
 }
