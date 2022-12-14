@@ -8,9 +8,9 @@ import com.github.arisaksen.path.Path
 
 /** Launches the desktop (LWJGL3) application. */
 fun main() {
-    Lwjgl3Application(Path(), Lwjgl3ApplicationConfiguration().apply {
+    Lwjgl3Application(Path("Day12"), Lwjgl3ApplicationConfiguration().apply {
         setTitle("Path")
-        setWindowedMode(1220, 360)
+        setWindowedMode(163 * 8, 41 * 8)
         setWindowIcon(*(arrayOf(128, 64, 32, 16).map { "libgdx$it.png" }.toTypedArray()))
     })
 }
