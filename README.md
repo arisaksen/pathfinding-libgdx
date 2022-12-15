@@ -5,6 +5,8 @@ https://adventofcode.com/2022/day/12
 
 Uses the puzzle input from Advent of Code to generate a static tiledMap to animate the pathfinding.
 
+![image](https://github.com/arisaksen/pathfinding-libgdx/blob/master/assets/Path.png)
+
 ## LibGDX
 
 A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/tommyettinger/gdx-liftoff).

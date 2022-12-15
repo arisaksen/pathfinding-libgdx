@@ -14,13 +14,4 @@ fun main() {
         setWindowIcon(*(arrayOf(128, 64, 32, 16).map { "libgdx$it.png" }.toTypedArray()))
     })
 }
-/**
- * Should be 29 distance instead of 31. +2 steps was added after reading of startCell was added to change :
-
-}.also {
-aoc12Map.mapIndexed { y, row ->
-row.mapIndexed { x, char ->
-if (char == 'S') startCell = CellData(x, y)
-if (char == 'E') endCell = CellData(x, y)
-
- */
+/** Should be distance=29 */
